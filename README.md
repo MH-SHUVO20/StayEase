@@ -4,7 +4,7 @@
 
 ### AI Assistance Note
 
-AI assistance was used in this assessment to complete the work in a short time. The main project idea, system direction, database choice, agent flow, and final decisions were planned by me. AI was used as a coding assistant to help write the Python skeleton, improve the documentation, check the logic, and verify the API and database behavior. The final review, testing through Postman, and submission decisions were done by me.
+Claude and ChatGPT were used as helper tools in this assessment to complete the work in a short time. The main project idea, system direction, database choice, agent flow, and final decisions were planned by me. These AI tools were used as coding assistants to help write the Python skeleton, improve the documentation, check the logic, and verify the API and database behavior. The final review, testing through Postman, and submission decisions were done by me.
 
 ### 1.1 System Overview
 
