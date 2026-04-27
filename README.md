@@ -2,6 +2,10 @@
 
 ## 1. Architecture Document
 
+### AI Usage Note
+
+This project uses a language model only for understanding guest messages and writing the final chat reply. The actual property search, details lookup, and booking creation are done through defined LangChain tools and PostgreSQL queries. API keys are loaded from the local `.env` file and should not be committed to GitHub.
+
 ### 1.1 System Overview
 
 StayEase is a short-term accommodation rental platform for guests in Bangladesh. In this project, a simple booking agent is designed to help guests search available properties, see property details, and confirm bookings. The FastAPI backend receives the guest message and sends it to the LangGraph agent. The agent uses tools to read or write data from the PostgreSQL database. The language model is used for understanding the guest message and preparing a polite response. The architecture can use Groq or OpenRouter as requested in the task, and this repository uses Gemini in the code because the available API key is Gemini.
