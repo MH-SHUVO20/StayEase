@@ -178,6 +178,15 @@ def _try_create_booking_in_db(
     return created
 
 
+def _booking_unavailable_response(booking: BookingInput) -> dict[str, Any]:
+    """Return a clear response when the listing cannot be booked."""
+    return {
+        "error": "Listing is not available for the selected dates or guest count.",
+        "listing_id": booking.listing_id,
+        "status": "not_available",
+    }
+
+
 def _mock_booking_response(booking: BookingInput, nights: int) -> dict[str, Any]:
     """Return a demo booking when PostgreSQL is unavailable."""
     price_per_night = 4500
@@ -286,10 +295,9 @@ def create_booking(**booking_data: Any) -> dict[str, Any]:
         created = _try_create_booking_in_db(booking, nights)
         if created:
             return created
+        return _booking_unavailable_response(booking)
     except Exception:
-        pass
-
-    return _mock_booking_response(booking, nights)
+        return _mock_booking_response(booking, nights)
 
 
 ALL_TOOLS = [search_available_properties, get_listing_details, create_booking]
