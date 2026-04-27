@@ -10,7 +10,7 @@ Claude and ChatGPT were used as helper tools in this assessment to make the work
 
 StayEase is a short-term accommodation rental platform for guests in Bangladesh. In this project, a simple booking agent is designed to help guests search available properties, see property details, and confirm bookings. The FastAPI backend receives the guest message and sends it to the LangGraph agent. The agent uses tools to read or write data from the PostgreSQL database. The language model is used for understanding the guest message and preparing a polite response. The architecture can use Groq or OpenRouter as requested in the task, and this repository uses Gemini in the code because the available API key is Gemini.
 
-Gemini was selected for the implementation because it is free to use for this assessment and still gives efficient output for this type of booking assistant. I did not use a paid API key. I could also use GitHub Models with GPT-4 mini, but I selected Gemini because it was easier for my setup and gave good enough result for tool based agent work. The system prompt was also optimized based on my own experience from testing the agent replies, tool calls, and escalation behavior.
+Gemini was selected for the implementation because it is free to use for this assessment and still gives efficient output for this type of booking assistant. I did not use a paid API key. At first GitHub Models with GPT-4 mini was also considered, but the free token limit is small and it can finish quickly during testing. For this reason Gemini was the better free choice for completing and testing the agent. The system prompt was also optimized based on my own experience from testing the agent replies, tool calls, and escalation behavior.
 
 ```mermaid
 flowchart LR
