@@ -1,39 +1,47 @@
-# StayEase AI Agent
+# StayEase Booking Agent
 
 ## 1. Architecture Document
 
 ### 1.1 System Overview
 
-StayEase AI is a booking assistant for a short-term accommodation rental platform in Bangladesh. Guests can ask the agent to search for properties, view listing details, and create bookings. A FastAPI backend receives chat messages, sends them to a LangGraph agent, stores conversation and booking data in PostgreSQL, and uses the Gemini LLM for natural language understanding and tool calling.
+StayEase is a short-term accommodation rental platform for guests in Bangladesh. In this project, a simple booking agent is designed to help guests search available properties, see property details, and confirm bookings. The FastAPI backend receives the guest message and sends it to the LangGraph agent. The agent uses tools to read or write data from the PostgreSQL database. The language model is used for understanding the guest message and preparing a polite response. In this repository Gemini is used because the available key is Gemini, but the LLM box can be replaced by Groq or OpenRouter if needed.
 
 ```mermaid
 flowchart LR
     Guest[Guest] --> Backend[FastAPI Backend]
     Backend --> Agent[LangGraph Agent]
-    Agent --> Tools[Booking Tools]
+    Agent --> Tools[Search, Details and Booking Tools]
     Tools --> DB[(PostgreSQL Database)]
-    Agent --> LLM[Gemini LLM]
+    Agent --> LLM[LLM Provider]
     Backend --> DB
     Backend --> Guest
 ```
 
 ### 1.2 Conversation Flow
 
-1. Guest sends: "I need a room in Cox's Bazar for 2 nights for 2 guests."
-2. FastAPI receives the message at `POST /api/chat/{conversation_id}/message`.
-3. FastAPI loads the previous conversation messages from PostgreSQL.
-4. The LangGraph agent stores the new guest message in state.
-5. The `classify_intent` node identifies the request as `search`.
-6. The `call_llm` node asks the LLM to decide the next action.
-7. The LLM calls `search_available_properties` with location, dates, and guests.
-8. The `execute_tool` node queries available listings from PostgreSQL.
-9. The `respond` node formats the results for the guest.
-10. The backend stores the assistant reply and returns available properties with BDT prices.
-
-Example response:
+Example guest message:
 
 ```text
-Hello! I found 2 available stays in Cox's Bazar for 2 guests:
+I need a room in Cox's Bazar for 2 nights for 2 guests.
+```
+
+Step by step flow:
+
+1. The guest sends the message to `POST /api/chat/{conversation_id}/message`.
+2. The FastAPI backend receives the message and loads the previous messages for this conversation.
+3. The message is passed to the LangGraph agent with the conversation id.
+4. The `classify_intent` node checks the latest message and marks the intent as `search`.
+5. The `call_llm` node sends the conversation to the LLM with the StayEase tools.
+6. The LLM selects the `search_available_properties` tool because the guest asked for a room.
+7. The `execute_tool` node runs the search query against PostgreSQL.
+8. The database returns active listings in Cox's Bazar that can support 2 guests and are not booked for those dates.
+9. The `respond` node prepares the final reply for the guest.
+10. The backend stores the assistant reply and sends the response back to the guest.
+
+Example final answer:
+
+```text
+Hello! I found 2 available stays in Cox's Bazar for 2 guests.
 
 1. Sea Breeze Villa - BDT 4,500 per night
 2. Ocean View Resort - BDT 6,200 per night
@@ -43,35 +51,35 @@ Hello! I found 2 available stays in Cox's Bazar for 2 guests:
 
 | Field | Type | Why it is needed |
 | --- | --- | --- |
-| `messages` | `list[BaseMessage]` | Keeps the full chat history for the LLM and tool responses. |
-| `conversation_id` | `str` | Connects the graph run to a stored conversation. |
-| `current_intent` | `str` | Stores whether the guest wants search, details, book, or escalation. |
-| `tool_results` | `dict[str, Any]` | Stores the latest tool output before the final response. |
-| `needs_escalation` | `bool` | Marks unsupported requests that should go to a human. |
+| `messages` | `list[BaseMessage]` | Stores guest, assistant, and tool messages for the current conversation. |
+| `conversation_id` | `str` | Keeps the graph connected with the saved conversation in the database. |
+| `current_intent` | `str` | Stores the current task such as search, details, book, or escalate. |
+| `tool_results` | `dict[str, Any]` | Keeps the latest tool output before the final reply is written. |
+| `needs_escalation` | `bool` | Shows whether the request should be transferred to a human. |
 
 ### 1.4 Node Design
 
-| Node | What it does | State updates | Next node |
+| Node | What it does | What it updates in state | Next node |
 | --- | --- | --- | --- |
-| `classify_intent` | Reads the latest guest message and classifies it. | `current_intent`, `needs_escalation` | `call_llm` or `escalate` |
-| `call_llm` | Sends the conversation to the LLM with tools attached. | `messages` | `execute_tool` or end |
-| `execute_tool` | Runs the selected booking tool. | `messages`, `tool_results` | `respond` |
-| `respond` | Uses the LLM to write a guest-friendly final answer. | `messages` | end |
-| `escalate` | Creates a polite human handoff message. | `messages` | end |
+| `classify_intent` | Reads the latest guest message and finds the intent. | `current_intent`, `needs_escalation` | `call_llm` or `escalate` |
+| `call_llm` | Sends the messages to the LLM and allows tool calling. | `messages` | `execute_tool` or end |
+| `execute_tool` | Runs the tool requested by the LLM. | `messages`, `tool_results` | `respond` |
+| `respond` | Creates the final user-facing answer. | `messages` | end |
+| `escalate` | Gives a polite handoff message for unsupported requests. | `messages` | end |
 
 ### 1.5 Tool Definitions
 
 #### `search_available_properties`
 
-When used: The guest wants to find available properties by location, dates, and number of guests.
+This tool is used when the guest wants to search for a property by location, dates, and number of guests.
 
 Input parameters:
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `location` | `str` | City or area in Bangladesh. |
-| `check_in` | `date` | Guest check-in date. |
-| `check_out` | `date` | Guest check-out date. |
+| `location` | `str` | City or area in Bangladesh, for example Cox's Bazar. |
+| `check_in` | `date` | Check-in date. |
+| `check_out` | `date` | Check-out date. |
 | `guests` | `int` | Number of guests. |
 
 Output format:
@@ -92,13 +100,13 @@ Output format:
 
 #### `get_listing_details`
 
-When used: The guest asks about a specific property or listing ID.
+This tool is used when the guest asks about a selected property.
 
 Input parameters:
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `listing_id` | `str` | Unique listing ID. |
+| `listing_id` | `str` | The id of the selected listing. |
 
 Output format:
 
@@ -107,6 +115,7 @@ Output format:
   "listing_id": "LST-001",
   "title": "Sea Breeze Villa",
   "description": "Beachfront villa in Cox's Bazar with sea views and modern amenities.",
+  "location": "Cox's Bazar",
   "price_per_night": 4500,
   "currency": "BDT",
   "amenities": ["Wi-Fi", "AC", "Kitchen"]
@@ -115,16 +124,16 @@ Output format:
 
 #### `create_booking`
 
-When used: The guest confirms they want to book a listing.
+This tool is used only after the guest confirms that they want to book a listing.
 
 Input parameters:
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `listing_id` | `str` | Listing to book. |
+| `listing_id` | `str` | The listing selected by the guest. |
 | `guest_name` | `str` | Full name of the guest. |
-| `check_in` | `date` | Guest check-in date. |
-| `check_out` | `date` | Guest check-out date. |
+| `check_in` | `date` | Check-in date. |
+| `check_out` | `date` | Check-out date. |
 | `guests` | `int` | Number of guests. |
 
 Output format:
@@ -134,6 +143,10 @@ Output format:
   "booking_id": "BKG-20260427-001",
   "listing_id": "LST-001",
   "guest_name": "Nusrat Jahan",
+  "check_in": "2026-05-10",
+  "check_out": "2026-05-12",
+  "guests": 2,
+  "nights": 2,
   "total_price": 9000,
   "currency": "BDT",
   "status": "confirmed"
@@ -141,6 +154,8 @@ Output format:
 ```
 
 ### 1.6 Database Schema Design
+
+Only three main tables are used for this project: `listings`, `bookings`, and `conversations`.
 
 #### `listings`
 
@@ -162,7 +177,7 @@ Output format:
 | `is_active` | `boolean not null default true` |
 | `created_at` | `timestamptz not null default now()` |
 
-Recommended indexes:
+Indexes used for faster search:
 
 ```sql
 CREATE INDEX idx_listings_location_active_guests
@@ -187,7 +202,7 @@ ON listings (id, is_active);
 | `status` | `varchar(30) not null` |
 | `created_at` | `timestamptz not null default now()` |
 
-Recommended index:
+Index used for checking date overlap:
 
 ```sql
 CREATE INDEX idx_bookings_listing_dates_status

@@ -1,23 +1,25 @@
 # API Contract
 
+This file describes the two API endpoints needed for the StayEase chat system. The backend is expected to receive the guest message, call the LangGraph agent, save the conversation, and return the assistant response.
+
 ## POST `/api/chat/{conversation_id}/message`
 
-Send a guest message to the StayEase AI agent.
+This endpoint sends one guest message to the agent.
 
 ### Request Schema
 
-Path parameters:
+Path parameter:
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `conversation_id` | `string` | yes | Unique conversation ID. |
+| `conversation_id` | `string` | yes | Id of the current conversation. |
 
 Body:
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
-| `message` | `string` | yes | Guest message text. |
-| `guest_name` | `string` | no | Guest name if known. |
+| `message` | `string` | yes | Message written by the guest. |
+| `guest_name` | `string` | no | Guest name if it is already known. |
 
 ### Request Example
 
@@ -37,10 +39,10 @@ Content-Type: application/json
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `conversation_id` | `string` | Conversation ID. |
-| `reply` | `string` | Agent response for the guest. |
-| `intent` | `string` | Detected intent: `search`, `details`, `book`, or `escalate`. |
-| `tool_results` | `object` | Latest tool output, if a tool was used. |
+| `conversation_id` | `string` | Id of the current conversation. |
+| `reply` | `string` | Final message returned by the agent. |
+| `intent` | `string` | Detected intent such as `search`, `details`, `book`, or `escalate`. |
+| `tool_results` | `object` | Data returned by a tool, if any tool was used. |
 
 ### Response Example
 
@@ -76,17 +78,11 @@ Content-Type: application/json
 
 ### Possible Error Responses
 
-```json
-{
-  "detail": "Message is required."
-}
-```
-
 Status code: `400 Bad Request`
 
 ```json
 {
-  "detail": "Conversation not found."
+  "detail": "Message is required."
 }
 ```
 
@@ -94,23 +90,29 @@ Status code: `404 Not Found`
 
 ```json
 {
-  "detail": "Agent service is temporarily unavailable."
+  "detail": "Conversation not found."
 }
 ```
 
 Status code: `503 Service Unavailable`
 
+```json
+{
+  "detail": "Agent service is temporarily unavailable."
+}
+```
+
 ## GET `/api/chat/{conversation_id}/history`
 
-Get the full conversation history for a guest chat.
+This endpoint returns the saved message history of one conversation.
 
 ### Request Schema
 
-Path parameters:
+Path parameter:
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `conversation_id` | `string` | yes | Unique conversation ID. |
+| `conversation_id` | `string` | yes | Id of the current conversation. |
 
 ### Request Example
 
@@ -122,16 +124,16 @@ GET /api/chat/conv-1001/history
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `conversation_id` | `string` | Conversation ID. |
-| `messages` | `array` | Stored chat messages. |
+| `conversation_id` | `string` | Id of the current conversation. |
+| `messages` | `array` | List of saved messages. |
 
-Each message:
+Message object:
 
 | Field | Type | Description |
 | --- | --- | --- |
 | `role` | `string` | `guest`, `assistant`, or `tool`. |
-| `content` | `string` | Message content. |
-| `created_at` | `string` | ISO timestamp. |
+| `content` | `string` | Text content of the message. |
+| `created_at` | `string` | Time when the message was saved. |
 
 ### Response Example
 
@@ -155,18 +157,18 @@ Each message:
 
 ### Possible Error Responses
 
+Status code: `404 Not Found`
+
 ```json
 {
   "detail": "Conversation not found."
 }
 ```
 
-Status code: `404 Not Found`
+Status code: `500 Internal Server Error`
 
 ```json
 {
   "detail": "Could not load conversation history."
 }
 ```
-
-Status code: `500 Internal Server Error`
