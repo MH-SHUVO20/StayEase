@@ -4,7 +4,7 @@
 
 ### AI Assistance Note
 
-Claude and ChatGPT were used as helper tools in this assessment to complete the work in a short time. The main project idea, system direction, database choice, agent flow, and final decisions were planned by me. These AI tools were used as coding assistants to help write the Python skeleton, improve the documentation, check the logic, and verify the API and database behavior. The final review, testing through Postman, and submission decisions were done by me.
+Claude and ChatGPT were used as helper tools in this assessment to make the work faster and more time efficient. The main design, project direction, database choice, agent flow, and code structure were planned and reviewed by me. I did not blindly use AI output; I checked the code, tested the API, fixed the logic where needed, and kept the final decisions according to my own understanding. Without AI help I could still build this project, but it would take more time.
 
 ### 1.1 System Overview
 
