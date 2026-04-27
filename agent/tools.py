@@ -1,5 +1,4 @@
 """Tool definitions for the StayEase booking agent."""
-
 from datetime import date
 from typing import Any
 
@@ -7,11 +6,8 @@ from langchain_core.tools import tool
 from pydantic import BaseModel, Field
 
 
-# ---------------------------------------------------------------------------
+
 # Input schemas
-# ---------------------------------------------------------------------------
-
-
 class SearchInput(BaseModel):
     """Input for searching available properties."""
 
@@ -20,12 +16,10 @@ class SearchInput(BaseModel):
     check_out: date = Field(..., description="Check-out date")
     guests: int = Field(..., ge=1, description="Number of guests")
 
-
 class DetailsInput(BaseModel):
     """Input for getting listing details."""
 
     listing_id: str = Field(..., description="Unique listing ID")
-
 
 class BookingInput(BaseModel):
     """Input for creating a booking."""
@@ -36,12 +30,7 @@ class BookingInput(BaseModel):
     check_out: date = Field(..., description="Check-out date")
     guests: int = Field(..., ge=1, description="Number of guests")
 
-
-# ---------------------------------------------------------------------------
 # Tools
-# ---------------------------------------------------------------------------
-
-
 @tool("search_available_properties", args_schema=SearchInput)
 def search_available_properties(
     location: str,
@@ -103,28 +92,26 @@ def get_listing_details(listing_id: str) -> dict[str, Any]:
 
 @tool("create_booking", args_schema=BookingInput)
 def create_booking(
-    listing_id: str,
-    guest_name: str,
-    check_in: date,
-    check_out: date,
-    guests: int,
+    **booking_data: Any,
 ) -> dict[str, Any]:
     """Create a booking for a property.
 
     Called only after the guest confirms they want to book.
     """
+    booking = BookingInput(**booking_data)
+
     # TODO: insert into bookings table
-    nights = (check_out - check_in).days
+    nights = (booking.check_out - booking.check_in).days
     price_per_night = 4500  # would come from DB
     total_price = nights * price_per_night
 
     return {
         "booking_id": "BKG-20260427-001",
-        "listing_id": listing_id,
-        "guest_name": guest_name,
-        "check_in": check_in.isoformat(),
-        "check_out": check_out.isoformat(),
-        "guests": guests,
+        "listing_id": booking.listing_id,
+        "guest_name": booking.guest_name,
+        "check_in": booking.check_in.isoformat(),
+        "check_out": booking.check_out.isoformat(),
+        "guests": booking.guests,
         "nights": nights,
         "price_per_night": price_per_night,
         "total_price": total_price,
