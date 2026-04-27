@@ -1,15 +1,28 @@
 """Node functions for the StayEase LangGraph agent."""
 
+import os
 from typing import Any
 
 from langchain_core.messages import AIMessage, BaseMessage, SystemMessage, ToolMessage
-from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
+from dotenv import load_dotenv
 
 from agent.state import AgentState
 from agent.tools import ALL_TOOLS
 
-# LLM with tools bound
-llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+load_dotenv()
+
+# Gemini API key setup:
+# LangChain looks for GOOGLE_API_KEY, but many people save the key as GEMINI_API_KEY.
+# This lets both names work.
+if not os.getenv("GOOGLE_API_KEY") and os.getenv("GEMINI_API_KEY"):
+    os.environ["GOOGLE_API_KEY"] = os.getenv("GEMINI_API_KEY", "")
+
+# Gemini 2.5 Flash is the best default for a booking assistant:
+# fast, good quality, supports tool calling, and keeps cost sensible.
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+
+llm = ChatGoogleGenerativeAI(model=GEMINI_MODEL, temperature=0)
 llm_with_tools = llm.bind_tools(ALL_TOOLS)
 
 SYSTEM_PROMPT = """You are StayEase AI, the virtual booking assistant for StayEase, a short-term rental platform in Bangladesh.
