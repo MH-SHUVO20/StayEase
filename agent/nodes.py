@@ -12,14 +12,11 @@ from agent.tools import ALL_TOOLS
 
 load_dotenv()
 
-# Gemini API key setup:
-# LangChain looks for GOOGLE_API_KEY, but many people save the key as GEMINI_API_KEY.
-# This lets both names work.
+# LangChain's Gemini package reads GOOGLE_API_KEY.
+# This also supports the easier name GEMINI_API_KEY in the .env file.
 if not os.getenv("GOOGLE_API_KEY") and os.getenv("GEMINI_API_KEY"):
     os.environ["GOOGLE_API_KEY"] = os.getenv("GEMINI_API_KEY", "")
 
-# Gemini 2.5 Flash is the best default for a booking assistant:
-# fast, good quality, supports tool calling, and keeps cost sensible.
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
 llm = ChatGoogleGenerativeAI(model=GEMINI_MODEL, temperature=0)
@@ -77,7 +74,17 @@ def execute_tool(state: AgentState) -> dict[str, Any]:
     tool_output: dict[str, Any] = {}
 
     for call in last_message.tool_calls:
-        result = tool_map[call["name"]].invoke(call["args"])
+        tool_name = call["name"]
+        if tool_name not in tool_map:
+            tool_messages.append(
+                ToolMessage(
+                    content=f"Tool '{tool_name}' is not available.",
+                    tool_call_id=call["id"],
+                )
+            )
+            continue
+
+        result = tool_map[tool_name].invoke(call["args"])
         tool_messages.append(
             ToolMessage(content=str(result), tool_call_id=call["id"])
         )

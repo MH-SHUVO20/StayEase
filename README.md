@@ -4,7 +4,7 @@
 
 ### 1.1 System Overview
 
-StayEase AI is a booking assistant for a short-term accommodation rental platform in Bangladesh. Guests can ask the agent to search for properties, view listing details, and create bookings. A FastAPI backend receives chat messages, sends them to a LangGraph agent, stores conversation and booking data in PostgreSQL, and uses an OpenRouter-compatible LLM for natural language understanding and tool calling.
+StayEase AI is a booking assistant for a short-term accommodation rental platform in Bangladesh. Guests can ask the agent to search for properties, view listing details, and create bookings. A FastAPI backend receives chat messages, sends them to a LangGraph agent, stores conversation and booking data in PostgreSQL, and uses the Gemini LLM for natural language understanding and tool calling.
 
 ```mermaid
 flowchart LR
@@ -12,7 +12,7 @@ flowchart LR
     Backend --> Agent[LangGraph Agent]
     Agent --> Tools[Booking Tools]
     Tools --> DB[(PostgreSQL Database)]
-    Agent --> LLM[Groq / OpenRouter LLM]
+    Agent --> LLM[Gemini LLM]
     Backend --> DB
     Backend --> Guest
 ```

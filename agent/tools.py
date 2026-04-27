@@ -1,10 +1,10 @@
 """Tool definitions for the StayEase booking agent."""
+
 from datetime import date
 from typing import Any
 
 from langchain_core.tools import tool
 from pydantic import BaseModel, Field
-
 
 
 # Input schemas
@@ -16,10 +16,12 @@ class SearchInput(BaseModel):
     check_out: date = Field(..., description="Check-out date")
     guests: int = Field(..., ge=1, description="Number of guests")
 
+
 class DetailsInput(BaseModel):
     """Input for getting listing details."""
 
     listing_id: str = Field(..., description="Unique listing ID")
+
 
 class BookingInput(BaseModel):
     """Input for creating a booking."""
@@ -29,6 +31,7 @@ class BookingInput(BaseModel):
     check_in: date = Field(..., description="Check-in date")
     check_out: date = Field(..., description="Check-out date")
     guests: int = Field(..., ge=1, description="Number of guests")
+
 
 # Tools
 @tool("search_available_properties", args_schema=SearchInput)
