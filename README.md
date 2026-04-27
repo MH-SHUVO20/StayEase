@@ -4,7 +4,7 @@
 
 ### 1.1 System Overview
 
-StayEase is a short-term accommodation rental platform for guests in Bangladesh. In this project, a simple booking agent is designed to help guests search available properties, see property details, and confirm bookings. The FastAPI backend receives the guest message and sends it to the LangGraph agent. The agent uses tools to read or write data from the PostgreSQL database. The language model is used for understanding the guest message and preparing a polite response. In this repository Gemini is used because the available key is Gemini, but the LLM box can be replaced by Groq or OpenRouter if needed.
+StayEase is a short-term accommodation rental platform for guests in Bangladesh. In this project, a simple booking agent is designed to help guests search available properties, see property details, and confirm bookings. The FastAPI backend receives the guest message and sends it to the LangGraph agent. The agent uses tools to read or write data from the PostgreSQL database. The language model is used for understanding the guest message and preparing a polite response. The architecture can use Groq or OpenRouter as requested in the task, and this repository uses Gemini in the code because the available API key is Gemini.
 
 ```mermaid
 flowchart LR
@@ -12,7 +12,7 @@ flowchart LR
     Backend --> Agent[LangGraph Agent]
     Agent --> Tools[Search, Details and Booking Tools]
     Tools --> DB[(PostgreSQL Database)]
-    Agent --> LLM[LLM Provider]
+    Agent --> LLM[Groq / OpenRouter LLM]
     Backend --> DB
     Backend --> Guest
 ```
