@@ -146,46 +146,61 @@ Output format:
 
 | Column | Type |
 | --- | --- |
-| `id` | `uuid primary key` |
-| `listing_id` | `varchar(30) unique not null` |
+| `id` | `varchar primary key` |
 | `title` | `varchar(150) not null` |
 | `description` | `text` |
 | `location` | `varchar(120) not null` |
-| `price_per_night` | `integer not null` |
-| `currency` | `varchar(10) not null default 'BDT'` |
+| `price_per_night` | `numeric not null` |
 | `max_guests` | `integer not null` |
 | `bedrooms` | `integer` |
 | `bathrooms` | `integer` |
-| `amenities` | `jsonb` |
+| `amenities` | `text[]` |
 | `rating` | `numeric(2,1)` |
+| `total_reviews` | `integer default 0` |
+| `host_name` | `varchar(120)` |
+| `cancellation_policy` | `varchar(255)` |
 | `is_active` | `boolean not null default true` |
-| `created_at` | `timestamp not null default now()` |
+| `created_at` | `timestamptz not null default now()` |
+
+Recommended indexes:
+
+```sql
+CREATE INDEX idx_listings_location_active_guests
+ON listings (lower(location), is_active, max_guests);
+
+CREATE INDEX idx_listings_id_active
+ON listings (id, is_active);
+```
 
 #### `bookings`
 
 | Column | Type |
 | --- | --- |
-| `id` | `uuid primary key` |
-| `booking_id` | `varchar(40) unique not null` |
-| `listing_id` | `uuid references listings(id)` |
-| `conversation_id` | `uuid references conversations(id)` |
+| `id` | `varchar primary key` |
+| `listing_id` | `varchar references listings(id)` |
+| `conversation_id` | `varchar references conversations(id)` |
 | `guest_name` | `varchar(120) not null` |
 | `check_in` | `date not null` |
 | `check_out` | `date not null` |
 | `guests` | `integer not null` |
-| `total_price` | `integer not null` |
-| `currency` | `varchar(10) not null default 'BDT'` |
+| `total_price` | `numeric not null` |
 | `status` | `varchar(30) not null` |
-| `created_at` | `timestamp not null default now()` |
+| `created_at` | `timestamptz not null default now()` |
+
+Recommended index:
+
+```sql
+CREATE INDEX idx_bookings_listing_dates_status
+ON bookings (listing_id, check_in, check_out, status);
+```
 
 #### `conversations`
 
 | Column | Type |
 | --- | --- |
-| `id` | `uuid primary key` |
-| `conversation_id` | `varchar(80) unique not null` |
-| `guest_name` | `varchar(120)` |
-| `status` | `varchar(30) not null default 'active'` |
+| `id` | `varchar primary key` |
 | `messages` | `jsonb not null default '[]'` |
-| `created_at` | `timestamp not null default now()` |
-| `updated_at` | `timestamp not null default now()` |
+| `current_intent` | `varchar(30)` |
+| `needs_escalation` | `boolean not null default false` |
+| `created_at` | `timestamptz not null default now()` |
+| `updated_at` | `timestamptz not null default now()` |

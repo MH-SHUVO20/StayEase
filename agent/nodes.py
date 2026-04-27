@@ -12,10 +12,12 @@ from agent.tools import ALL_TOOLS
 
 load_dotenv()
 
-# LangChain's Gemini package reads GOOGLE_API_KEY.
-# This also supports the easier name GEMINI_API_KEY in the .env file.
-if not os.getenv("GOOGLE_API_KEY") and os.getenv("GEMINI_API_KEY"):
-    os.environ["GOOGLE_API_KEY"] = os.getenv("GEMINI_API_KEY", "")
+# LangChain's Gemini package reads GOOGLE_API_KEY. These fallbacks support
+# common Gemini key names people put in .env files.
+if not os.getenv("GOOGLE_API_KEY"):
+    gemini_key = os.getenv("GEMINI_API_KEY") or os.getenv("Gemini_API_KEY")
+    if gemini_key:
+        os.environ["GOOGLE_API_KEY"] = gemini_key
 
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
