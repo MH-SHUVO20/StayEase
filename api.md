@@ -172,3 +172,159 @@ Status code: `500 Internal Server Error`
   "detail": "Could not load conversation history."
 }
 ```
+
+## Test Cases
+
+The following cases can be used to test the API after running the server.
+
+Start the server:
+
+```powershell
+conda activate stayease
+uvicorn main:app --reload
+```
+
+### Test Case 1: Search Available Property
+
+Purpose: Check that the agent can search listings by location, date, and guest count.
+
+Request:
+
+```http
+POST /api/chat/test-search-001/message
+Content-Type: application/json
+```
+
+```json
+{
+  "message": "I need a room in Sylhet from 2026-05-10 to 2026-05-12 for 2 guests",
+  "guest_name": "Nusrat Jahan"
+}
+```
+
+Expected result:
+
+```json
+{
+  "conversation_id": "test-search-001",
+  "intent": "search",
+  "tool_results": {
+    "data": [
+      {
+        "listing_id": "LST-003",
+        "title": "Sylhet Tea Garden Cottage",
+        "location": "Sylhet",
+        "price_per_night": 3200,
+        "currency": "BDT"
+      }
+    ]
+  }
+}
+```
+
+### Test Case 2: Ask for Listing Details
+
+Purpose: Check that the agent can return details for a specific listing.
+
+Request:
+
+```http
+POST /api/chat/test-details-001/message
+Content-Type: application/json
+```
+
+```json
+{
+  "message": "Tell me more about LST-003",
+  "guest_name": "Nusrat Jahan"
+}
+```
+
+Expected result:
+
+```json
+{
+  "conversation_id": "test-details-001",
+  "intent": "details",
+  "tool_results": {
+    "listing_id": "LST-003",
+    "title": "Sylhet Tea Garden Cottage",
+    "price_per_night": 3200,
+    "currency": "BDT"
+  }
+}
+```
+
+### Test Case 3: Unsupported Request Escalation
+
+Purpose: Check that the agent does not answer outside the allowed scope.
+
+Request:
+
+```http
+POST /api/chat/test-escalate-001/message
+Content-Type: application/json
+```
+
+```json
+{
+  "message": "Can you arrange airport pickup for me?",
+  "guest_name": "Nusrat Jahan"
+}
+```
+
+Expected result:
+
+```json
+{
+  "conversation_id": "test-escalate-001",
+  "intent": "escalate",
+  "tool_results": {}
+}
+```
+
+### Test Case 4: Conversation History
+
+Purpose: Check that saved messages can be loaded later.
+
+Request:
+
+```http
+GET /api/chat/test-search-001/history
+```
+
+Expected result:
+
+```json
+{
+  "conversation_id": "test-search-001",
+  "messages": [
+    {
+      "role": "guest",
+      "content": "I need a room in Sylhet from 2026-05-10 to 2026-05-12 for 2 guests"
+    },
+    {
+      "role": "assistant",
+      "content": "Hello! I found one property available for your dates in Sylhet."
+    }
+  ]
+}
+```
+
+### Test Case 5: Missing Conversation
+
+Purpose: Check the 404 response for unknown conversation history.
+
+Request:
+
+```http
+GET /api/chat/missing-conversation/history
+```
+
+Expected result:
+
+```json
+{
+  "detail": "Conversation not found."
+}
+```
