@@ -328,3 +328,154 @@ Expected result:
   "detail": "Conversation not found."
 }
 ```
+
+## Postman Test Result
+
+The API was also tested from Postman after running the FastAPI server locally. The server was running at:
+
+```text
+http://127.0.0.1:8000
+```
+
+### Search Test Result
+
+Request:
+
+```http
+POST /api/chat/test-agent-001/message
+```
+
+Request body:
+
+```json
+{
+  "message": "I need a room in Sylhet from 2026-05-10 to 2026-05-12 for 2 guests",
+  "guest_name": "Nusrat Jahan"
+}
+```
+
+Response:
+
+```json
+{
+  "conversation_id": "test-agent-001",
+  "reply": "Hello! I found one property available for your dates in Sylhet:\n\n*   **Sylhet Tea Garden Cottage** (ID: LST-003)\n    *   Price per night: 3200 BDT\n    *   Max guests: 3\n    *   Rating: 4.9\n\nWould you like to know more about this property or proceed with booking?",
+  "intent": "search",
+  "tool_results": {
+    "data": [
+      {
+        "listing_id": "LST-003",
+        "title": "Sylhet Tea Garden Cottage",
+        "location": "Sylhet",
+        "price_per_night": 3200,
+        "currency": "BDT",
+        "max_guests": 3,
+        "rating": 4.9
+      }
+    ]
+  }
+}
+```
+
+This result shows that the agent understood the guest message as a search request and returned data from the listings table.
+
+### History Test Result
+
+Request:
+
+```http
+GET /api/chat/test-agent-001/history
+```
+
+Response:
+
+```json
+{
+  "conversation_id": "test-agent-001",
+  "messages": [
+    {
+      "role": "guest",
+      "content": "I need a room in Sylhet from 2026-05-10 to 2026-05-12 for 2 guests",
+      "created_at": "2026-04-27T10:52:09.934480+00:00"
+    },
+    {
+      "role": "assistant",
+      "content": "Hello! I found one property available for your dates in Sylhet:\n\n*   **Sylhet Tea Garden Cottage** (ID: LST-003)\n    *   Price per night: 3200 BDT\n    *   Max guests: 3\n    *   Rating: 4.9\n\nWould you like to know more about this property or proceed with booking?",
+      "created_at": "2026-04-27T10:52:14.996384+00:00"
+    }
+  ]
+}
+```
+
+This result shows that the conversation was saved and can be loaded again by conversation id.
+
+### Booking Test Result
+
+Request:
+
+```http
+POST /api/chat/test-agent-003/message
+```
+
+Request body:
+
+```json
+{
+  "message": "I want to book LST-003 from 2026-06-10 to 2026-06-12 for 2 guests. My name is Nusrat Jahan.",
+  "guest_name": "Nusrat Jahan"
+}
+```
+
+Response:
+
+```json
+{
+  "conversation_id": "test-agent-003",
+  "reply": "Hello! Your booking for LST-003 from 2026-06-10 to 2026-06-12 for 2 guests under the name Nusrat Jahan has been confirmed. Your booking ID is BKG-20260427165824510. The total price is 6400 BDT for 2 nights.",
+  "intent": "book",
+  "tool_results": {
+    "booking_id": "BKG-20260427165824510",
+    "listing_id": "LST-003",
+    "guest_name": "Nusrat Jahan",
+    "check_in": "2026-06-10",
+    "check_out": "2026-06-12",
+    "guests": 2,
+    "total_price": 6400,
+    "status": "confirmed",
+    "nights": 2,
+    "currency": "BDT"
+  }
+}
+```
+
+This result shows that the agent created a confirmed booking and calculated the total price in BDT.
+
+### Escalation Test Result
+
+Request:
+
+```http
+POST /api/chat/test-agent-004/message
+```
+
+Request body:
+
+```json
+{
+  "message": "Can you arrange airport pickup?",
+  "guest_name": "Nusrat Jahan"
+}
+```
+
+Response:
+
+```json
+{
+  "conversation_id": "test-agent-004",
+  "reply": "I'm sorry, this is outside what I can help with. Let me connect you with a human agent from StayEase who can assist you. They'll be with you shortly!",
+  "intent": "escalate",
+  "tool_results": {}
+}
+```
+
+This result shows that the agent does not answer outside the allowed scope and sends the guest to a human agent.
