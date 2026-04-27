@@ -2,9 +2,9 @@
 
 ## 1. Architecture Document
 
-### AI Usage Note
+### AI Assistance Note
 
-This project uses a language model only for understanding guest messages and writing the final chat reply. The actual property search, details lookup, and booking creation are done through defined LangChain tools and PostgreSQL queries. API keys are loaded from the local `.env` file and should not be committed to GitHub.
+AI assistance was used in this assessment to complete the work in a short time. The main project idea, system direction, database choice, agent flow, and final decisions were planned by me. AI was used as a coding assistant to help write the Python skeleton, improve the documentation, check the logic, and verify the API and database behavior. The final review, testing through Postman, and submission decisions were done by me.
 
 ### 1.1 System Overview
 
