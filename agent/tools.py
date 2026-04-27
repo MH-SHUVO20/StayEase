@@ -93,6 +93,109 @@ def _mock_search(location: str, guests: int) -> list[dict[str, Any]]:
     ]
 
 
+def _booking_nights(booking: BookingInput) -> int:
+    """Calculate how many nights the guest wants to stay."""
+    return (booking.check_out - booking.check_in).days
+
+
+def _create_booking_query() -> str:
+    """Return the SQL query used to create a booking."""
+    return """
+        WITH selected_listing AS (
+            SELECT id, price_per_night
+            FROM listings
+            WHERE id = %s
+              AND is_active = true
+              AND max_guests >= %s
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM bookings AS b
+                  WHERE b.listing_id = listings.id
+                    AND b.status IN ('confirmed', 'pending')
+                    AND b.check_in < %s
+                    AND b.check_out > %s
+              )
+            LIMIT 1
+        )
+        INSERT INTO bookings (
+            id,
+            listing_id,
+            guest_name,
+            check_in,
+            check_out,
+            guests,
+            total_price,
+            status
+        )
+        SELECT
+            'BKG-' || to_char(now(), 'YYYYMMDDHH24MISSMS'),
+            id,
+            %s,
+            %s,
+            %s,
+            %s,
+            price_per_night * %s,
+            'confirmed'
+        FROM selected_listing
+        RETURNING
+            id AS booking_id,
+            listing_id,
+            guest_name,
+            check_in,
+            check_out,
+            guests,
+            total_price,
+            status;
+    """
+
+
+def _booking_params(booking: BookingInput, nights: int) -> tuple[Any, ...]:
+    """Prepare the SQL parameters for creating a booking."""
+    return (
+        booking.listing_id,
+        booking.guests,
+        booking.check_out,
+        booking.check_in,
+        booking.guest_name,
+        booking.check_in,
+        booking.check_out,
+        booking.guests,
+        nights,
+    )
+
+
+def _try_create_booking_in_db(
+    booking: BookingInput,
+    nights: int,
+) -> dict[str, Any] | None:
+    """Try to create the booking in PostgreSQL."""
+    created = execute_one(_create_booking_query(), _booking_params(booking, nights))
+    if not created:
+        return None
+
+    created["nights"] = nights
+    created["currency"] = "BDT"
+    return created
+
+
+def _mock_booking_response(booking: BookingInput, nights: int) -> dict[str, Any]:
+    """Return a demo booking when PostgreSQL is unavailable."""
+    price_per_night = 4500
+    return {
+        "booking_id": "BKG-MOCK-001",
+        "listing_id": booking.listing_id,
+        "guest_name": booking.guest_name,
+        "check_in": booking.check_in.isoformat(),
+        "check_out": booking.check_out.isoformat(),
+        "guests": booking.guests,
+        "nights": nights,
+        "price_per_night": price_per_night,
+        "total_price": nights * price_per_night,
+        "currency": "BDT",
+        "status": "confirmed_mock",
+    }
+
+
 @tool("search_available_properties", args_schema=SearchInput)
 def search_available_properties(
     location: str,
@@ -175,93 +278,18 @@ def get_listing_details(listing_id: str) -> dict[str, Any]:
 def create_booking(**booking_data: Any) -> dict[str, Any]:
     """Create a booking for a property after the guest confirms."""
     booking = BookingInput(**booking_data)
-    nights = (booking.check_out - booking.check_in).days
+    nights = _booking_nights(booking)
     if nights <= 0:
         return {"error": "Check-out date must be after check-in date."}
 
-    query = """
-        WITH selected_listing AS (
-            SELECT id, price_per_night
-            FROM listings
-            WHERE id = %s
-              AND is_active = true
-              AND max_guests >= %s
-              AND NOT EXISTS (
-                  SELECT 1
-                  FROM bookings AS b
-                  WHERE b.listing_id = listings.id
-                    AND b.status IN ('confirmed', 'pending')
-                    AND b.check_in < %s
-                    AND b.check_out > %s
-              )
-            LIMIT 1
-        )
-        INSERT INTO bookings (
-            id,
-            listing_id,
-            guest_name,
-            check_in,
-            check_out,
-            guests,
-            total_price,
-            status
-        )
-        SELECT
-            'BKG-' || to_char(now(), 'YYYYMMDDHH24MISSMS'),
-            id,
-            %s,
-            %s,
-            %s,
-            %s,
-            price_per_night * %s,
-            'confirmed'
-        FROM selected_listing
-        RETURNING
-            id AS booking_id,
-            listing_id,
-            guest_name,
-            check_in,
-            check_out,
-            guests,
-            total_price,
-            status;
-    """
-
-    params = (
-        booking.listing_id,
-        booking.guests,
-        booking.check_out,
-        booking.check_in,
-        booking.guest_name,
-        booking.check_in,
-        booking.check_out,
-        booking.guests,
-        nights,
-    )
-
     try:
-        created = execute_one(query, params)
+        created = _try_create_booking_in_db(booking, nights)
         if created:
-            created["nights"] = nights
-            created["currency"] = "BDT"
             return created
     except Exception:
         pass
 
-    price_per_night = 4500
-    return {
-        "booking_id": "BKG-MOCK-001",
-        "listing_id": booking.listing_id,
-        "guest_name": booking.guest_name,
-        "check_in": booking.check_in.isoformat(),
-        "check_out": booking.check_out.isoformat(),
-        "guests": booking.guests,
-        "nights": nights,
-        "price_per_night": price_per_night,
-        "total_price": nights * price_per_night,
-        "currency": "BDT",
-        "status": "confirmed_mock",
-    }
+    return _mock_booking_response(booking, nights)
 
 
 ALL_TOOLS = [search_available_properties, get_listing_details, create_booking]
